@@ -1,3 +1,4 @@
+# Calculate odds ratio for multivariate version and variance inflation factor (VIF). The function exports csv.
 odds<-function(df,digit=2,p_r=4,formula,name="Odds_ratio"){
 library(car)
 library(dplyr)
