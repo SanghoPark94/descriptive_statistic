@@ -1,0 +1,57 @@
+
+describe<-function(df,con_r=2,cat_r=3,p_r=4,name="",formula){
+  library(dplyr)
+  target=as.character(formula[[2]])
+  y=df[[target]]
+  tmp<-NA
+  summary_stat<-array(NA,dim=c((length(df)),4))
+  for (i in 1:length(df)){
+   if (length(unique(df[,i]))<3){
+     tmp[i]<-0
+   } else{
+     tmp[i]<-1
+   }
+  }
+  df<-df[,sort(tmp,index.return=TRUE,decreasing=TRUE)$ix]
+  df %>% relocate(target, .after = last_col())
+  Y0<-df %>% filter(y==0)
+  Y1<-df %>% filter(y==1)
+
+  for (i in 1:sum(tmp)){
+  
+    summary_stat[i,1]<-paste0(round(mean(Y0[,i]),con_r)," ± ",round(sd(Y0[,i]),con_r))
+    summary_stat[i,2]<-paste0(round(mean(Y1[,i]),con_r)," ± ",round(sd(Y1[,i]),con_r))
+    var_test<-var.test(Y0[,i],Y1[,i])
+    if(var_test$p.value<0.05){
+      summary_stat[i,3]<-round(as.numeric(t.test(Y0[,i],Y1[,i],var.equal=FALSE)$p.value),4)
+      summary_stat[i,4]<-"variance not equal"
+    }else{
+      summary_stat[i,3]<-round(as.numeric(t.test(Y0[,i],Y1[,i],var.equal=TRUE)$p.value),4)
+      summary_stat[i,4]<-"variance equal"
+    }
+  }
+  
+  for (i in (sum(tmp)+1):(length(df)-1)){
+    result<-Y0 %>% 
+      group_by(Y0[,i]) %>% 
+      summarise(count=n(),percent=n()/nrow(.))
+    
+    summary_stat[i,1]<-paste0(formatC(result$count[1],digits=2,big.mark=",",format="d")," (",round(result$percent[1],cat_r)*100,"%)")
+    
+    result<-Y1 %>% 
+      group_by(Y1[,i]) %>% 
+      summarise(count=n(),percent=n()/nrow(.))
+    
+    summary_stat[i,2]<-paste0(formatC(result$count[1],digits=2,big.mark=",",format="d")," (",round(result$percent[1],cat_r)*100,"%)")
+    summary_stat[i,3]<-round(chisq.test(df[target],df[,i])$p.value,4)
+    summary_stat[i,4]<-"chi square test"
+  }
+  colnames(summary_stat)<-c("target = 0", "target = 1", "p-value","feature")
+  rownames(summary_stat)<-c(colnames(df)[1:(length(df)-1)],"total_num")
+  summary_stat[length(df),1]<-formatC(length(Y0[,1]),digits=2,big.mark=",",format="d")
+  summary_stat[length(df),2]<-formatC(length(Y1[,1]),digits=2,big.mark=",",format="d")
+  summary_stat[length(df),3]<-formatC(length(df[,1]),digits=2,big.mark=",",format="d")
+  name<-paste0(name,".csv")
+  write.csv(summary_stat,name,fileEncoding="CP949")
+}
+
