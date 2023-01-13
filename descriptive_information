@@ -1,4 +1,5 @@
-
+# Calculate mean and standard deviation for a continuous variable, and count and percentage for a categorical variable.
+# The function exports csv.
 describe<-function(df,con_r=2,cat_r=3,p_r=4,name="",formula){
   library(dplyr)
   target=as.character(formula[[2]])
